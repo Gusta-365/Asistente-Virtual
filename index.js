@@ -1,18 +1,30 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
+const express = require('express');
+const http = require('http');
 const qrcode = require('qrcode-terminal');
 
 // Crear cliente de WhatsApp
 const client = new Client({
-    authStrategy: new LocalAuth()
+    authStrategy: new LocalAuth(),
+    puppeteer: {
+        headless: true,  // Usa el navegador sin cabeza
+        args: ['--no-sandbox', '--disable-setuid-sandbox']  // Argumentos necesarios para Railway y contenedores
+    }
 });
 
-client.on('qr', qr => {
+// Para manejar el cliente de Express
+const app = express();
+const server = http.createServer(app);
+
+// Cuando el QR esté listo, se mostrará en la consola
+client.on('qr', (qr) => {
     console.log("Escanea este QR con WhatsApp:");
     qrcode.generate(qr, { small: true });
 });
 
+// Cuando WhatsApp esté listo, se imprimirá en la consola
 client.on('ready', () => {
-    console.log('✅ SYGNUS Esta listo para trabajar para ti GUS.');
+    console.log('✅ SYGNUS Está listo para trabajar para ti, GUS.');
 });
 
 let userState = {};
@@ -82,4 +94,15 @@ client.on('message', async message => {
 
 });
 
+// Inicializa el cliente de WhatsApp
 client.initialize();
+
+// Crear servidor Express para manejar el tráfico HTTP
+app.get('/', (req, res) => {
+    res.send('Servidor en línea. ¡WhatsApp Web está funcionando!');
+});
+
+// Iniciar el servidor
+server.listen(process.env.PORT || 3000, () => {
+    console.log('Servidor iniciado en puerto 3000');
+});
